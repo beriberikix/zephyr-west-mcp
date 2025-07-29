@@ -735,6 +735,882 @@ def index_gtags(
         command_args.extend(projects)
     return run_west_command(command_args)
 
+# --- MCP Tool for `west init` ---
+@mcp.tool()
+def init_workspace(
+    directory: Optional[str] = None,
+    manifest_url: Optional[str] = None,
+    manifest_rev: Optional[str] = None,
+    manifest_file: Optional[str] = None,
+    clone_opt: Optional[List[str]] = None,
+    local: bool = False,
+    rename_delay: Optional[int] = None,
+) -> Dict[str, Any]:
+    """
+    Creates a west workspace.
+
+    Args:
+        directory (str, optional): The directory to create the workspace in.
+        manifest_url (str, optional): Manifest repository URL to clone.
+        manifest_rev (str, optional): Manifest repository branch or tag name to check out.
+        manifest_file (str, optional): Manifest file name to use.
+        clone_opt (List[str], optional): Additional option to pass to 'git clone'.
+        local (bool, optional): Use an existing local manifest repository.
+        rename_delay (int, optional): Number of seconds to wait before renaming temporary directories.
+
+    Returns:
+        dict: Command execution result.
+    """
+    command_args = ['init']
+    if manifest_url:
+        command_args.extend(['-m', manifest_url])
+    if manifest_rev:
+        command_args.extend(['--mr', manifest_rev])
+    if manifest_file:
+        command_args.extend(['--mf', manifest_file])
+    if clone_opt:
+        for opt in clone_opt:
+            command_args.extend(['-o', opt])
+    if local:
+        command_args.append('-l')
+    if rename_delay:
+        command_args.extend(['--rename-delay', str(rename_delay)])
+    if directory:
+        command_args.append(directory)
+    return run_west_command(command_args)
+
+# --- MCP Tool for `west update` ---
+@mcp.tool()
+def update_workspace(
+    projects: Optional[List[str]] = None,
+    stats: bool = False,
+    name_cache: Optional[str] = None,
+    path_cache: Optional[str] = None,
+    fetch: Optional[str] = None,
+    fetch_opt: Optional[List[str]] = None,
+    narrow: bool = False,
+    keep_descendants: bool = False,
+    rebase: bool = False,
+    group_filter: Optional[str] = None,
+    submodule_init_config: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """
+    Updates active projects defined in the manifest file.
+
+    Args:
+        projects (List[str], optional): Projects to operate on.
+        stats (bool, optional): Print performance statistics.
+        name_cache (str, optional): Cache repositories by project name.
+        path_cache (str, optional): Cache repositories by relative path.
+        fetch (str, optional): How to fetch projects ('always' or 'smart').
+        fetch_opt (List[str], optional): Additional options for 'git fetch'.
+        narrow (bool, optional): Fetch just the project revision.
+        keep_descendants (bool, optional): Keep descendant branches checked out.
+        rebase (bool, optional): Rebase checked out branches.
+        group_filter (str, optional): Filter projects by group.
+        submodule_init_config (List[str], optional): Git config for submodule init.
+
+    Returns:
+        dict: Command execution result.
+    """
+    command_args = ['update']
+    if stats:
+        command_args.append('--stats')
+    if name_cache:
+        command_args.extend(['--name-cache', name_cache])
+    if path_cache:
+        command_args.extend(['--path-cache', path_cache])
+    if fetch:
+        command_args.extend(['-f', fetch])
+    if fetch_opt:
+        for opt in fetch_opt:
+            command_args.extend(['-o', opt])
+    if narrow:
+        command_args.append('-n')
+    if keep_descendants:
+        command_args.append('-k')
+    if rebase:
+        command_args.append('-r')
+    if group_filter:
+        command_args.extend(['--group-filter', group_filter])
+    if submodule_init_config:
+        for config in submodule_init_config:
+            command_args.extend(['--submodule-init-config', config])
+    if projects:
+        command_args.extend(projects)
+    return run_west_command(command_args)
+
+# --- MCP Tool for `west list` ---
+@mcp.tool()
+def list_projects(
+    projects: Optional[List[str]] = None,
+    all: bool = False,
+    inactive: bool = False,
+    manifest_path_from_yaml: bool = False,
+    format: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Prints information about projects in the west manifest.
+
+    Args:
+        projects (List[str], optional): Projects to operate on.
+        all (bool, optional): Include inactive projects.
+        inactive (bool, optional): List only inactive projects.
+        manifest_path_from_yaml (bool, optional): Print manifest path from YAML.
+        format (str, optional): Format string to use.
+
+    Returns:
+        dict: Command execution result.
+    """
+    command_args = ['list']
+    if all:
+        command_args.append('-a')
+    if inactive:
+        command_args.append('-i')
+    if manifest_path_from_yaml:
+        command_args.append('--manifest-path-from-yaml')
+    if format:
+        command_args.extend(['-f', format])
+    if projects:
+        command_args.extend(projects)
+    return run_west_command(command_args)
+
+# --- MCP Tool for `west manifest` ---
+@mcp.tool()
+def manage_manifest(
+    resolve: bool = False,
+    freeze: bool = False,
+    validate: bool = False,
+    path: bool = False,
+    untracked: bool = False,
+    out: Optional[str] = None,
+    active_only: bool = False,
+) -> Dict[str, Any]:
+    """
+    Manages the west manifest.
+
+    Args:
+        resolve (bool, optional): Print the resolved manifest.
+        freeze (bool, optional): Print the resolved manifest with SHAs.
+        validate (bool, optional): Validate the current manifest.
+        path (bool, optional): Print the top-level manifest file's path.
+        untracked (bool, optional): Print untracked files and directories.
+        out (str, optional): Output file for --resolve and --freeze.
+        active_only (bool, optional): Only resolve active projects.
+
+    Returns:
+        dict: Command execution result.
+    """
+    command_args = ['manifest']
+    if resolve:
+        command_args.append('--resolve')
+    if freeze:
+        command_args.append('--freeze')
+    if validate:
+        command_args.append('--validate')
+    if path:
+        command_args.append('--path')
+    if untracked:
+        command_args.append('--untracked')
+    if out:
+        command_args.extend(['-o', out])
+    if active_only:
+        command_args.append('--active-only')
+    return run_west_command(command_args)
+
+# --- MCP Tool for `west compare` ---
+@mcp.tool()
+def compare_projects(
+    projects: Optional[List[str]] = None,
+    all: bool = False,
+    exit_code: bool = False,
+    ignore_branches: bool = False,
+    no_ignore_branches: bool = False,
+) -> Dict[str, Any]:
+    """
+    Compares project working tree state against the last 'west update'.
+
+    Args:
+        projects (List[str], optional): Projects to operate on.
+        all (bool, optional): Include inactive projects.
+        exit_code (bool, optional): Exit with status 1 if there are differences.
+        ignore_branches (bool, optional): Ignore branches with clean working trees.
+        no_ignore_branches (bool, optional): Don't ignore branches.
+
+    Returns:
+        dict: Command execution result.
+    """
+    command_args = ['compare']
+    if all:
+        command_args.append('-a')
+    if exit_code:
+        command_args.append('--exit-code')
+    if ignore_branches:
+        command_args.append('--ignore-branches')
+    if no_ignore_branches:
+        command_args.append('--no-ignore-branches')
+    if projects:
+        command_args.extend(projects)
+    return run_west_command(command_args)
+
+# --- MCP Tool for `west diff` ---
+@mcp.tool()
+def diff_projects(
+    projects: Optional[List[str]] = None,
+    all: bool = False,
+    manifest: bool = False,
+    git_diff_args: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """
+    Runs 'git diff' on specified projects.
+
+    Args:
+        projects (List[str], optional): Projects to operate on.
+        all (bool, optional): Include inactive projects.
+        manifest (bool, optional): Show changes relative to 'manifest-rev'.
+        git_diff_args (List[str], optional): Arguments to pass to 'git diff'.
+
+    Returns:
+        dict: Command execution result.
+    """
+    command_args = ['diff']
+    if all:
+        command_args.append('-a')
+    if manifest:
+        command_args.append('-m')
+    if projects:
+        command_args.extend(projects)
+    if git_diff_args:
+        command_args.append('--')
+        command_args.extend(git_diff_args)
+    return run_west_command(command_args)
+
+# --- MCP Tool for `west status` ---
+@mcp.tool()
+def status_projects(
+    projects: Optional[List[str]] = None,
+    all: bool = False,
+    git_status_args: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """
+    Runs 'git status' on specified projects.
+
+    Args:
+        projects (List[str], optional): Projects to operate on.
+        all (bool, optional): Include inactive projects.
+        git_status_args (List[str], optional): Arguments to pass to 'git status'.
+
+    Returns:
+        dict: Command execution result.
+    """
+    command_args = ['status']
+    if all:
+        command_args.append('-a')
+    if projects:
+        command_args.extend(projects)
+    if git_status_args:
+        command_args.append('--')
+        command_args.extend(git_status_args)
+    return run_west_command(command_args)
+
+# --- MCP Tool for `west forall` ---
+@mcp.tool()
+def forall_projects(
+    command: str,
+    projects: Optional[List[str]] = None,
+    cwd: Optional[str] = None,
+    all: bool = False,
+    group: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """
+    Runs a command in each specified project.
+
+    Args:
+        command (str): The command to run.
+        projects (List[str], optional): Projects to operate on.
+        cwd (str, optional): Directory to run commands from.
+        all (bool, optional): Include inactive projects.
+        group (List[str], optional): Only run on projects in these groups.
+
+    Returns:
+        dict: Command execution result.
+    """
+    command_args = ['forall', '-c', command]
+    if cwd:
+        command_args.extend(['-C', cwd])
+    if all:
+        command_args.append('-a')
+    if group:
+        for g in group:
+            command_args.extend(['-g', g])
+    if projects:
+        command_args.extend(projects)
+    return run_west_command(command_args)
+
+# --- MCP Tool for `west grep` ---
+@mcp.tool()
+def grep_projects(
+    pattern: str,
+    projects: Optional[List[str]] = None,
+    tool: Optional[str] = None,
+    tool_path: Optional[str] = None,
+    grep_args: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """
+    Runs grep or a grep-like tool in specified projects.
+
+    Args:
+        pattern (str): The pattern to search for.
+        projects (List[str], optional): Projects to operate on.
+        tool (str, optional): The grep tool to use ('git-grep', 'ripgrep', 'grep').
+        tool_path (str, optional): Path to the grep tool executable.
+        grep_args (List[str], optional): Arguments to pass to the grep tool.
+
+    Returns:
+        dict: Command execution result.
+    """
+    command_args = ['grep']
+    if tool:
+        command_args.extend(['--tool', tool])
+    if tool_path:
+        command_args.extend(['--tool-path', tool_path])
+    if projects:
+        for p in projects:
+            command_args.extend(['-p', p])
+    command_args.append(pattern)
+    if grep_args:
+        command_args.append('--')
+        command_args.extend(grep_args)
+    return run_west_command(command_args)
+
+# --- MCP Tool for `west config` ---
+@mcp.tool()
+def manage_config(
+    name: Optional[str] = None,
+    value: Optional[str] = None,
+    list: bool = False,
+    delete: bool = False,
+    delete_all: bool = False,
+    append: bool = False,
+    scope: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Manages west configuration files.
+
+    Args:
+        name (str, optional): The name of the config option.
+        value (str, optional): The value to set for the config option.
+        list (bool, optional): List all options and their values.
+        delete (bool, optional): Delete an option in one config file.
+        delete_all (bool, optional): Delete an option everywhere it's set.
+        append (bool, optional): Append to an existing value.
+        scope (str, optional): The scope to use ('system', 'global', 'local').
+
+    Returns:
+        dict: Command execution result.
+    """
+    command_args = ['config']
+    if list:
+        command_args.append('-l')
+    if delete:
+        command_args.append('-d')
+    if delete_all:
+        command_args.append('-D')
+    if append:
+        command_args.append('-a')
+    if scope:
+        command_args.append(f'--{scope}')
+    if name:
+        command_args.append(name)
+    if value:
+        command_args.append(value)
+    return run_west_command(command_args)
+
+# --- MCP Tool for `west topdir` ---
+@mcp.tool()
+def get_topdir() -> Dict[str, Any]:
+    """
+    Prints the absolute path of the current west workspace's top directory.
+
+    Returns:
+        dict: Command execution result.
+    """
+    return run_west_command(['topdir'])
+
+# --- MCP Tool for `west twister` ---
+@mcp.tool()
+def run_twister(
+    extra_test_args: Optional[List[str]] = None,
+    save_tests: Optional[str] = None,
+    load_tests: Optional[str] = None,
+    testsuite_root: Optional[List[str]] = None,
+    only_failed: bool = False,
+    list_tests: bool = False,
+    test_tree: bool = False,
+    integration: bool = False,
+    emulation_only: bool = False,
+    device_testing: bool = False,
+    generate_hardware_map: Optional[str] = None,
+    simulation: Optional[str] = None,
+    device_serial: Optional[str] = None,
+    device_serial_pty: Optional[str] = None,
+    hardware_map: Optional[str] = None,
+    device_flash_timeout: Optional[int] = None,
+    device_flash_with_test: bool = False,
+    flash_before: bool = False,
+    build_only: bool = False,
+    prep_artifacts_for_testing: bool = False,
+    package_artifacts: Optional[str] = None,
+    test_only: bool = False,
+    timeout_multiplier: Optional[float] = None,
+    test_pattern: Optional[str] = None,
+    test: Optional[List[str]] = None,
+    sub_test: Optional[str] = None,
+    pytest_args: Optional[str] = None,
+    ctest_args: Optional[str] = None,
+    enable_valgrind: bool = False,
+    enable_asan: bool = False,
+    board_root: Optional[List[str]] = None,
+    allow_installed_plugin: bool = False,
+    arch: Optional[str] = None,
+    subset: Optional[str] = None,
+    shuffle_tests: bool = False,
+    shuffle_tests_seed: Optional[int] = None,
+    clobber_output: bool = False,
+    cmake_only: bool = False,
+    enable_coverage: bool = False,
+    coverage: bool = False,
+    gcov_tool: Optional[str] = None,
+    coverage_basedir: Optional[str] = None,
+    coverage_platform: Optional[str] = None,
+    coverage_tool: Optional[str] = None,
+    coverage_formats: Optional[str] = None,
+    coverage_per_instance: bool = False,
+    disable_coverage_aggregation: bool = False,
+    test_config: Optional[str] = None,
+    level: Optional[int] = None,
+    device_serial_baud: Optional[int] = None,
+    disable_suite_name_check: bool = False,
+    exclude_tag: Optional[str] = None,
+    enable_lsan: bool = False,
+    enable_ubsan: bool = False,
+    filter: Optional[str] = None,
+    force_color: bool = False,
+    force_toolchain: bool = False,
+    create_rom_ram_report: bool = False,
+    footprint_report: Optional[str] = None,
+    enable_size_report: bool = False,
+    footprint_from_buildlog: bool = False,
+    last_metrics: bool = False,
+    compare_report: Optional[str] = None,
+    show_footprint: bool = False,
+    footprint_threshold: Optional[float] = None,
+    all_deltas: bool = False,
+    size: Optional[str] = None,
+    inline_logs: bool = False,
+    ignore_platform_key: bool = False,
+    jobs: Optional[int] = None,
+    force_platform: bool = False,
+    all: bool = False,
+    list_tags: bool = False,
+    log_file: Optional[str] = None,
+    runtime_artifact_cleanup: Optional[str] = None,
+    keep_artifacts: Optional[str] = None,
+    ninja: bool = False,
+    make: bool = False,
+    no_clean: bool = False,
+    aggressive_no_clean: bool = False,
+    detailed_test_id: bool = False,
+    no_detailed_test_id: bool = False,
+    detailed_skipped_report: bool = False,
+    outdir: Optional[str] = None,
+    report_dir: Optional[str] = None,
+    overflow_as_errors: bool = False,
+    report_filtered: bool = False,
+    exclude_platform: Optional[str] = None,
+    persistent_hardware_map: bool = False,
+    vendor: Optional[str] = None,
+    platform: Optional[str] = None,
+    platform_pattern: Optional[str] = None,
+    platform_reports: bool = False,
+    pre_script: Optional[str] = None,
+    quarantine_list: Optional[str] = None,
+    quarantine_verify: bool = False,
+    quit_on_failure: bool = False,
+    report_name: Optional[str] = None,
+    report_summary: Optional[int] = None,
+    report_suffix: Optional[str] = None,
+    report_all_options: bool = False,
+    retry_failed: Optional[int] = None,
+    retry_interval: Optional[int] = None,
+    retry_build_errors: bool = False,
+    enable_slow: bool = False,
+    enable_slow_only: bool = False,
+    seed: Optional[int] = None,
+    short_build_path: bool = False,
+    tag: Optional[str] = None,
+    timestamps: bool = False,
+    no_update: bool = False,
+    verbose: bool = False,
+    log_level: Optional[str] = None,
+    disable_warnings_as_errors: bool = False,
+    west_flash: Optional[str] = None,
+    west_runner: Optional[str] = None,
+    fixture: Optional[str] = None,
+    extra_args: Optional[str] = None,
+    dry_run: bool = False,
+    alt_config_root: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Runs twister, the Zephyr test runner.
+    """
+    command_args = ['twister']
+    if save_tests:
+        command_args.extend(['-E', save_tests])
+    if load_tests:
+        command_args.extend(['-F', load_tests])
+    if testsuite_root:
+        for root in testsuite_root:
+            command_args.extend(['-T', root])
+    if only_failed:
+        command_args.append('-f')
+    if list_tests:
+        command_args.append('--list-tests')
+    if test_tree:
+        command_args.append('--test-tree')
+    if integration:
+        command_args.append('-G')
+    if emulation_only:
+        command_args.append('--emulation-only')
+    if device_testing:
+        command_args.append('--device-testing')
+    if generate_hardware_map:
+        command_args.extend(['--generate-hardware-map', generate_hardware_map])
+    if simulation:
+        command_args.extend(['--simulation', simulation])
+    if device_serial:
+        command_args.extend(['--device-serial', device_serial])
+    if device_serial_pty:
+        command_args.extend(['--device-serial-pty', device_serial_pty])
+    if hardware_map:
+        command_args.extend(['--hardware-map', hardware_map])
+    if device_flash_timeout:
+        command_args.extend(['--device-flash-timeout', str(device_flash_timeout)])
+    if device_flash_with_test:
+        command_args.append('--device-flash-with-test')
+    if flash_before:
+        command_args.append('--flash-before')
+    if build_only:
+        command_args.append('-b')
+    if prep_artifacts_for_testing:
+        command_args.append('--prep-artifacts-for-testing')
+    if package_artifacts:
+        command_args.extend(['--package-artifacts', package_artifacts])
+    if test_only:
+        command_args.append('--test-only')
+    if timeout_multiplier:
+        command_args.extend(['--timeout-multiplier', str(timeout_multiplier)])
+    if test_pattern:
+        command_args.extend(['--test-pattern', test_pattern])
+    if test:
+        for t in test:
+            command_args.extend(['-s', t])
+    if sub_test:
+        command_args.extend(['--sub-test', sub_test])
+    if pytest_args:
+        command_args.extend(['--pytest-args', pytest_args])
+    if ctest_args:
+        command_args.extend(['--ctest-args', ctest_args])
+    if enable_valgrind:
+        command_args.append('--enable-valgrind')
+    if enable_asan:
+        command_args.append('--enable-asan')
+    if board_root:
+        for root in board_root:
+            command_args.extend(['-A', root])
+    if allow_installed_plugin:
+        command_args.append('--allow-installed-plugin')
+    if arch:
+        command_args.extend(['-a', arch])
+    if subset:
+        command_args.extend(['-B', subset])
+    if shuffle_tests:
+        command_args.append('--shuffle-tests')
+    if shuffle_tests_seed:
+        command_args.extend(['--shuffle-tests-seed', str(shuffle_tests_seed)])
+    if clobber_output:
+        command_args.append('-c')
+    if cmake_only:
+        command_args.append('--cmake-only')
+    if enable_coverage:
+        command_args.append('--enable-coverage')
+    if coverage:
+        command_args.append('-C')
+    if gcov_tool:
+        command_args.extend(['--gcov-tool', gcov_tool])
+    if coverage_basedir:
+        command_args.extend(['--coverage-basedir', coverage_basedir])
+    if coverage_platform:
+        command_args.extend(['--coverage-platform', coverage_platform])
+    if coverage_tool:
+        command_args.extend(['--coverage-tool', coverage_tool])
+    if coverage_formats:
+        command_args.extend(['--coverage-formats', coverage_formats])
+    if coverage_per_instance:
+        command_args.append('--coverage-per-instance')
+    if disable_coverage_aggregation:
+        command_args.append('--disable-coverage-aggregation')
+    if test_config:
+        command_args.extend(['--test-config', test_config])
+    if level:
+        command_args.extend(['--level', str(level)])
+    if device_serial_baud:
+        command_args.extend(['--device-serial-baud', str(device_serial_baud)])
+    if disable_suite_name_check:
+        command_args.append('--disable-suite-name-check')
+    if exclude_tag:
+        command_args.extend(['-e', exclude_tag])
+    if enable_lsan:
+        command_args.append('--enable-lsan')
+    if enable_ubsan:
+        command_args.append('--enable-ubsan')
+    if filter:
+        command_args.extend(['--filter', filter])
+    if force_color:
+        command_args.append('--force-color')
+    if force_toolchain:
+        command_args.append('--force-toolchain')
+    if create_rom_ram_report:
+        command_args.append('--create-rom-ram-report')
+    if footprint_report:
+        command_args.extend(['--footprint-report', footprint_report])
+    if enable_size_report:
+        command_args.append('--enable-size-report')
+    if footprint_from_buildlog:
+        command_args.append('--footprint-from-buildlog')
+    if last_metrics:
+        command_args.append('-m')
+    if compare_report:
+        command_args.extend(['--compare-report', compare_report])
+    if show_footprint:
+        command_args.append('--show-footprint')
+    if footprint_threshold:
+        command_args.extend(['-H', str(footprint_threshold)])
+    if all_deltas:
+        command_args.append('-D')
+    if size:
+        command_args.extend(['-z', size])
+    if inline_logs:
+        command_args.append('-i')
+    if ignore_platform_key:
+        command_args.append('--ignore-platform-key')
+    if jobs:
+        command_args.extend(['-j', str(jobs)])
+    if force_platform:
+        command_args.append('-K')
+    if all:
+        command_args.append('-l')
+    if list_tags:
+        command_args.append('--list-tags')
+    if log_file:
+        command_args.extend(['--log-file', log_file])
+    if runtime_artifact_cleanup:
+        command_args.extend(['-M', runtime_artifact_cleanup])
+    if keep_artifacts:
+        command_args.extend(['--keep-artifacts', keep_artifacts])
+    if ninja:
+        command_args.append('-N')
+    if make:
+        command_args.append('-k')
+    if no_clean:
+        command_args.append('-n')
+    if aggressive_no_clean:
+        command_args.append('--aggressive-no-clean')
+    if detailed_test_id:
+        command_args.append('--detailed-test-id')
+    if no_detailed_test_id:
+        command_args.append('--no-detailed-test-id')
+    if detailed_skipped_report:
+        command_args.append('--detailed-skipped-report')
+    if outdir:
+        command_args.extend(['-O', outdir])
+    if report_dir:
+        command_args.extend(['-o', report_dir])
+    if overflow_as_errors:
+        command_args.append('--overflow-as-errors')
+    if report_filtered:
+        command_args.append('--report-filtered')
+    if exclude_platform:
+        command_args.extend(['-P', exclude_platform])
+    if persistent_hardware_map:
+        command_args.append('--persistent-hardware-map')
+    if vendor:
+        command_args.extend(['--vendor', vendor])
+    if platform:
+        command_args.extend(['-p', platform])
+    if platform_pattern:
+        command_args.extend(['--platform-pattern', platform_pattern])
+    if platform_reports:
+        command_args.append('--platform-reports')
+    if pre_script:
+        command_args.extend(['--pre-script', pre_script])
+    if quarantine_list:
+        command_args.extend(['--quarantine-list', quarantine_list])
+    if quarantine_verify:
+        command_args.append('--quarantine-verify')
+    if quit_on_failure:
+        command_args.append('--quit-on-failure')
+    if report_name:
+        command_args.extend(['--report-name', report_name])
+    if report_summary:
+        command_args.extend(['--report-summary', str(report_summary)])
+    if report_suffix:
+        command_args.extend(['--report-suffix', report_suffix])
+    if report_all_options:
+        command_args.append('--report-all-options')
+    if retry_failed:
+        command_args.extend(['--retry-failed', str(retry_failed)])
+    if retry_interval:
+        command_args.extend(['--retry-interval', str(retry_interval)])
+    if retry_build_errors:
+        command_args.append('--retry-build-errors')
+    if enable_slow:
+        command_args.append('-S')
+    if enable_slow_only:
+        command_args.append('--enable-slow-only')
+    if seed:
+        command_args.extend(['--seed', str(seed)])
+    if short_build_path:
+        command_args.append('--short-build-path')
+    if tag:
+        command_args.extend(['-t', tag])
+    if timestamps:
+        command_args.append('--timestamps')
+    if no_update:
+        command_args.append('-u')
+    if verbose:
+        command_args.append('-v')
+    if log_level:
+        command_args.extend(['-ll', log_level])
+    if disable_warnings_as_errors:
+        command_args.append('-W')
+    if west_flash:
+        command_args.extend(['--west-flash', west_flash])
+    if west_runner:
+        command_args.extend(['--west-runner', west_runner])
+    if fixture:
+        command_args.extend(['-X', fixture])
+    if extra_args:
+        command_args.extend(['-x', extra_args])
+    if dry_run:
+        command_args.append('-y')
+    if alt_config_root:
+        command_args.extend(['--alt-config-root', alt_config_root])
+    if extra_test_args:
+        command_args.append('--')
+        command_args.extend(extra_test_args)
+    return run_west_command(command_args)
+
+# --- MCP Tool for `west sign` ---
+@mcp.tool()
+def sign_binary(
+    build_dir: Optional[str] = None,
+    quiet: bool = False,
+    force: bool = False,
+    tool: Optional[str] = None,
+    tool_path: Optional[str] = None,
+    tool_data: Optional[str] = None,
+    if_tool_available: bool = False,
+    bin: bool = False,
+    no_bin: bool = False,
+    sbin: Optional[str] = None,
+    hex: bool = False,
+    no_hex: bool = False,
+    shex: Optional[str] = None,
+    tool_opt: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """
+    Signs a Zephyr binary.
+    """
+    command_args = ['sign']
+    if build_dir:
+        command_args.extend(['-d', build_dir])
+    if quiet:
+        command_args.append('-q')
+    if force:
+        command_args.append('-f')
+    if tool:
+        command_args.extend(['-t', tool])
+    if tool_path:
+        command_args.extend(['-p', tool_path])
+    if tool_data:
+        command_args.extend(['-D', tool_data])
+    if if_tool_available:
+        command_args.append('--if-tool-available')
+    if bin:
+        command_args.append('--bin')
+    if no_bin:
+        command_args.append('--no-bin')
+    if sbin:
+        command_args.extend(['-B', sbin])
+    if hex:
+        command_args.append('--hex')
+    if no_hex:
+        command_args.append('--no-hex')
+    if shex:
+        command_args.extend(['-H', shex])
+    if tool_opt:
+        command_args.append('--')
+        command_args.extend(tool_opt)
+    return run_west_command(command_args)
+
+# --- MCP Tool for `west spdx` ---
+@mcp.tool()
+def create_spdx_bom(
+    init: bool = False,
+    build_dir: Optional[str] = None,
+    namespace_prefix: Optional[str] = None,
+    spdx_dir: Optional[str] = None,
+    spdx_version: Optional[str] = None,
+    analyze_includes: bool = False,
+    include_sdk: bool = False,
+) -> Dict[str, Any]:
+    """
+    Creates an SPDX bill of materials.
+    """
+    command_args = ['spdx']
+    if init:
+        command_args.append('-i')
+    if build_dir:
+        command_args.extend(['-d', build_dir])
+    if namespace_prefix:
+        command_args.extend(['-n', namespace_prefix])
+    if spdx_dir:
+        command_args.extend(['-s', spdx_dir])
+    if spdx_version:
+        command_args.extend(['--spdx-version', spdx_version])
+    if analyze_includes:
+        command_args.append('--analyze-includes')
+    if include_sdk:
+        command_args.append('--include-sdk')
+    return run_west_command(command_args)
+
+# --- MCP Tool for `west sdk` ---
+@mcp.tool()
+def manage_sdk(
+    subcommand: str,
+    args: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """
+    Manages the Zephyr SDK.
+    """
+    command_args = ['sdk', subcommand]
+    if args:
+        command_args.extend(args)
+    return run_west_command(command_args)
+
+
+
 # --- NEW MCP Tool for listing all available west commands ---
 @mcp.tool()
 def list_west_commands() -> Dict[str, Any]:
