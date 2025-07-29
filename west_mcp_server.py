@@ -129,78 +129,91 @@ def get_completion_script(shell: str) -> Dict[str, Any]:
     command_args = ['completion', shell]
     return run_west_command(command_args)
 
-# --- MCP Tool for `west boards` ---
+# --- MCP Tool for `west boards`, `west shields`, `west list`, and `west topdir` ---
 @mcp.tool()
-def list_boards(
+def get_west_info(
+    subcommand: str,
     name_re: Optional[str] = None,
     format_string: Optional[str] = None,
     board: Optional[str] = None,
     arch_root: Optional[List[str]] = None,
     board_root: Optional[List[str]] = None,
     soc_root: Optional[List[str]] = None,
-    board_dir: Optional[str] = None
+    board_dir: Optional[str] = None,
+    projects: Optional[List[str]] = None,
+    all: bool = False,
+    inactive: bool = False,
+    manifest_path_from_yaml: bool = False,
 ) -> Dict[str, Any]:
     """
-    Displays information about Zephyr boards.
+    A unified tool to get information about the west workspace.
 
     Args:
-        name_re (str, optional): A regular expression to filter board names.
-        format_string (str, optional): Format string to use to list each board.
+        subcommand (str): The subcommand to run ('boards', 'shields', 'list', 'topdir').
+        name_re (str, optional): A regular expression to filter board or shield names.
+        format_string (str, optional): Format string to use to list each board, shield, or project.
         board (str, optional): Lookup a specific board, fails if not found.
         arch_root (List[str], optional): Add an architecture root.
         board_root (List[str], optional): Add a board root.
         soc_root (List[str], optional): Add a SoC root.
         board_dir (str, optional): Only look for boards at the specific location.
+        projects (List[str], optional): Projects to operate on (for 'list' subcommand).
+        all (bool, optional): Include inactive projects (for 'list' subcommand).
+        inactive (bool, optional): List only inactive projects (for 'list' subcommand).
+        manifest_path_from_yaml (bool, optional): Print manifest path from YAML (for 'list' subcommand).
 
     Returns:
         dict: Command execution result.
     """
-    command_args = ['boards']
-    if name_re:
-        command_args.extend(['-n', name_re])
-    if format_string:
-        command_args.extend(['-f', format_string])
-    if board:
-        command_args.extend(['--board', board])
-    if arch_root:
-        for r in arch_root:
-            command_args.extend(['--arch-root', r])
-    if board_root:
-        for r in board_root:
-            command_args.extend(['--board-root', r])
-    if soc_root:
-        for r in soc_root:
-            command_args.extend(['--soc-root', r])
-    if board_dir:
-        command_args.extend(['--board-dir', board_dir])
-    return run_west_command(command_args)
+    valid_subcommands = ['boards', 'shields', 'list', 'topdir']
+    if subcommand not in valid_subcommands:
+        return {
+            "success": False,
+            "message": f"Invalid subcommand. Must be one of: {', '.join(valid_subcommands)}.",
+            "stdout": "",
+            "stderr": ""
+        }
 
-# --- MCP Tool for `west shields` ---
-@mcp.tool()
-def list_shields(
-    name_re: Optional[str] = None,
-    format_string: Optional[str] = None,
-    board_root: Optional[List[str]] = None
-) -> Dict[str, Any]:
-    """
-    Displays information about supported shields.
+    command_args = [subcommand]
 
-    Args:
-        name_re (str, optional): A regular expression to filter shield names.
-        format_string (str, optional): Format string to use to list each shield.
-        board_root (List[str], optional): Add a board root.
+    if subcommand == 'boards':
+        if name_re:
+            command_args.extend(['-n', name_re])
+        if format_string:
+            command_args.extend(['-f', format_string])
+        if board:
+            command_args.extend(['--board', board])
+        if arch_root:
+            for r in arch_root:
+                command_args.extend(['--arch-root', r])
+        if board_root:
+            for r in board_root:
+                command_args.extend(['--board-root', r])
+        if soc_root:
+            for r in soc_root:
+                command_args.extend(['--soc-root', r])
+        if board_dir:
+            command_args.extend(['--board-dir', board_dir])
+    elif subcommand == 'shields':
+        if name_re:
+            command_args.extend(['-n', name_re])
+        if format_string:
+            command_args.extend(['-f', format_string])
+        if board_root:
+            for r in board_root:
+                command_args.extend(['--board-root', r])
+    elif subcommand == 'list':
+        if all:
+            command_args.append('-a')
+        if inactive:
+            command_args.append('-i')
+        if manifest_path_from_yaml:
+            command_args.append('--manifest-path-from-yaml')
+        if format_string:
+            command_args.extend(['-f', format_string])
+        if projects:
+            command_args.extend(projects)
 
-    Returns:
-        dict: Command execution result.
-    """
-    command_args = ['shields']
-    if name_re:
-        command_args.extend(['-n', name_re])
-    if format_string:
-        command_args.extend(['-f', format_string])
-    if board_root:
-        for r in board_root:
-            command_args.extend(['--board-root', r])
     return run_west_command(command_args)
 
 # --- MCP Tool for Building Zephyr Projects (`west build`) ---
@@ -303,9 +316,10 @@ def build_zephyr_project(
 
     return run_west_command(command_args)
 
-# --- MCP Tool for Flashing Zephyr Projects (`west flash`) ---
+# --- MCP Tool for Runner-Based West Commands ---
 @mcp.tool()
-def flash_zephyr_project(
+def run_west_runner(
+    subcommand: str,
     build_dir: Optional[str] = None,
     runner: Optional[str] = None,
     skip_rebuild: Optional[bool] = False,
@@ -316,9 +330,10 @@ def flash_zephyr_project(
     openocd_search: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Flashes a Zephyr project to the target board using the 'west flash' command.
+    A single tool to execute runner-based commands like `flash`, `debug`, `debugserver`, `attach`, `rtt`, `robot`, and `simulate`.
 
     Args:
+        subcommand (str): The runner-based subcommand to execute.
         build_dir (str, optional): Application build directory.
         runner (str, optional): Override default runner from --build-dir.
         skip_rebuild (bool, optional): Do not refresh cmake dependencies first.
@@ -331,147 +346,17 @@ def flash_zephyr_project(
     Returns:
         dict: Command execution result.
     """
+    valid_subcommands = ['flash', 'debug', 'debugserver', 'attach', 'rtt', 'robot', 'simulate']
+    if subcommand not in valid_subcommands:
+        return {
+            "success": False,
+            "message": f"Invalid subcommand. Must be one of: {', '.join(valid_subcommands)}.",
+            "stdout": "",
+            "stderr": ""
+        }
+
     command_args = _add_runner_options(
-        ['flash'], build_dir, runner, skip_rebuild, domain,
-        board_dir, gdb, openocd, openocd_search
-    )
-    return run_west_command(command_args)
-
-# --- MCP Tool for `west debug` ---
-@mcp.tool()
-def debug_zephyr_project(
-    build_dir: Optional[str] = None,
-    runner: Optional[str] = None,
-    skip_rebuild: Optional[bool] = False,
-    domain: Optional[str] = None,
-    board_dir: Optional[str] = None,
-    gdb: Optional[str] = None,
-    openocd: Optional[str] = None,
-    openocd_search: Optional[str] = None
-) -> Dict[str, Any]:
-    """
-    Connects to the board, flashes the program, and starts a debugging session
-    using the 'west debug' command.
-
-    Args:
-        build_dir (str, optional): Application build directory.
-        runner (str, optional): Override default runner from --build-dir.
-        skip_rebuild (bool, optional): Do not refresh cmake dependencies first.
-        domain (str, optional): Execute runner only for given domain.
-        board_dir (str, optional): Board directory.
-        gdb (str, optional): Path to GDB.
-        openocd (str, optional): Path to OpenOCD.
-        openocd_search (str, optional): Path to add to OpenOCD search path.
-
-    Returns:
-        dict: Command execution result.
-    """
-    command_args = _add_runner_options(
-        ['debug'], build_dir, runner, skip_rebuild, domain,
-        board_dir, gdb, openocd, openocd_search
-    )
-    return run_west_command(command_args)
-
-# --- MCP Tool for `west debugserver` ---
-@mcp.tool()
-def start_debug_server(
-    build_dir: Optional[str] = None,
-    runner: Optional[str] = None,
-    skip_rebuild: Optional[bool] = False,
-    domain: Optional[str] = None,
-    board_dir: Optional[str] = None,
-    gdb: Optional[str] = None,
-    openocd: Optional[str] = None,
-    openocd_search: Optional[str] = None
-) -> Dict[str, Any]:
-    """
-    Connects to the board and launches a debug server which accepts incoming
-    connections for debugging the connected board using 'west debugserver'.
-
-    Args:
-        build_dir (str, optional): Application build directory.
-        runner (str, optional): Override default runner from --build-dir.
-        skip_rebuild (bool, optional): Do not refresh cmake dependencies first.
-        domain (str, optional): Execute runner only for given domain.
-        board_dir (str, optional): Board directory.
-        gdb (str, optional): Path to GDB.
-        openocd (str, optional): Path to OpenOCD.
-        openocd_search (str, optional): Path to add to OpenOCD search path.
-
-    Returns:
-        dict: Command execution result.
-    """
-    command_args = _add_runner_options(
-        ['debugserver'], build_dir, runner, skip_rebuild, domain,
-        board_dir, gdb, openocd, openocd_search
-    )
-    return run_west_command(command_args)
-
-# --- MCP Tool for `west attach` ---
-@mcp.tool()
-def attach_debugger(
-    build_dir: Optional[str] = None,
-    runner: Optional[str] = None,
-    skip_rebuild: Optional[bool] = False,
-    domain: Optional[str] = None,
-    board_dir: Optional[str] = None,
-    gdb: Optional[str] = None,
-    openocd: Optional[str] = None,
-    openocd_search: Optional[str] = None
-) -> Dict[str, Any]:
-    """
-    Attaches a debugger to the board without reflashing the program
-    using the 'west attach' command.
-
-    Args:
-        build_dir (str, optional): Application build directory.
-        runner (str, optional): Override default runner from --build-dir.
-        skip_rebuild (bool, optional): Do not refresh cmake dependencies first.
-        domain (str, optional): Execute runner only for given domain.
-        board_dir (str, optional): Board directory.
-        gdb (str, optional): Path to GDB.
-        openocd (str, optional): Path to OpenOCD.
-        openocd_search (str, optional): Path to add to OpenOCD search path.
-
-    Returns:
-        dict: Command execution result.
-    """
-    command_args = _add_runner_options(
-        ['attach'], build_dir, runner, skip_rebuild, domain,
-        board_dir, gdb, openocd, openocd_search
-    )
-    return run_west_command(command_args)
-
-# --- MCP Tool for `west rtt` ---
-@mcp.tool()
-def start_rtt_viewer(
-    build_dir: Optional[str] = None,
-    runner: Optional[str] = None,
-    skip_rebuild: Optional[bool] = False,
-    domain: Optional[str] = None,
-    board_dir: Optional[str] = None,
-    gdb: Optional[str] = None,
-    openocd: Optional[str] = None,
-    openocd_search: Optional[str] = None
-) -> Dict[str, Any]:
-    """
-    Starts an RTT viewer for the connected board using the 'west rtt' command.
-
-    Args:
-        build_dir (str, optional): Application build directory.
-        runner (str, optional): Override default runner from --build-dir.
-        skip_rebuild (bool, optional): Do not refresh cmake dependencies first.
-        domain (str, optional): Execute runner only for given domain.
-        board_dir (str, optional): Board directory.
-        gdb (str, optional): Path to GDB.
-        openocd (str, optional): Path to OpenOCD.
-        openocd_search (str, optional): Path to add to OpenOCD search path.
-
-    Returns:
-        dict: Command execution result.
-    """
-    command_args = _add_runner_options(
-        ['rtt'], build_dir, runner, skip_rebuild, domain,
+        [subcommand], build_dir, runner, skip_rebuild, domain,
         board_dir, gdb, openocd, openocd_search
     )
     return run_west_command(command_args)
@@ -558,74 +443,7 @@ def manage_binary_descriptors(
         command_args.extend(args)
     return run_west_command(command_args)
 
-# --- MCP Tool for `west robot` ---
-@mcp.tool()
-def run_robot_tests(
-    build_dir: Optional[str] = None,
-    runner: Optional[str] = None,
-    skip_rebuild: Optional[bool] = False,
-    domain: Optional[str] = None,
-    board_dir: Optional[str] = None,
-    gdb: Optional[str] = None,
-    openocd: Optional[str] = None,
-    openocd_search: Optional[str] = None
-) -> Dict[str, Any]:
-    """
-    Runs RobotFramework test suites with a chosen runner using 'west robot'.
 
-    Args:
-        build_dir (str, optional): Application build directory.
-        runner (str, optional): Override default runner from --build-dir.
-        skip_rebuild (bool, optional): Do not refresh cmake dependencies first.
-        domain (str, optional): Execute runner only for given domain.
-        board_dir (str, optional): Board directory.
-        gdb (str, optional): Path to GDB.
-        openocd (str, optional): Path to OpenOCD.
-        openocd_search (str, optional): Path to add to OpenOCD search path.
-
-    Returns:
-        dict: Command execution result.
-    """
-    command_args = _add_runner_options(
-        ['robot'], build_dir, runner, skip_rebuild, domain,
-        board_dir, gdb, openocd, openocd_search
-    )
-    return run_west_command(command_args)
-
-# --- MCP Tool for `west simulate` ---
-@mcp.tool()
-def simulate_board(
-    build_dir: Optional[str] = None,
-    runner: Optional[str] = None,
-    skip_rebuild: Optional[bool] = False,
-    domain: Optional[str] = None,
-    board_dir: Optional[str] = None,
-    gdb: Optional[str] = None,
-    openocd: Optional[str] = None,
-    openocd_search: Optional[str] = None
-) -> Dict[str, Any]:
-    """
-    Simulates the board on a chosen runner using generated artifacts
-    with 'west simulate'.
-
-    Args:
-        build_dir (str, optional): Application build directory.
-        runner (str, optional): Override default runner from --build-dir.
-        skip_rebuild (bool, optional): Do not refresh cmake dependencies first.
-        domain (str, optional): Execute runner only for given domain.
-        board_dir (str, optional): Board directory.
-        gdb (str, optional): Path to GDB.
-        openocd (str, optional): Path to OpenOCD.
-        openocd_search (str, optional): Path to add to OpenOCD search path.
-
-    Returns:
-        dict: Command execution result.
-    """
-    command_args = _add_runner_options(
-        ['simulate'], build_dir, runner, skip_rebuild, domain,
-        board_dir, gdb, openocd, openocd_search
-    )
-    return run_west_command(command_args)
 
 # --- MCP Tool for `west packages` ---
 @mcp.tool()
@@ -840,40 +658,7 @@ def update_workspace(
         command_args.extend(projects)
     return run_west_command(command_args)
 
-# --- MCP Tool for `west list` ---
-@mcp.tool()
-def list_projects(
-    projects: Optional[List[str]] = None,
-    all: bool = False,
-    inactive: bool = False,
-    manifest_path_from_yaml: bool = False,
-    format: Optional[str] = None,
-) -> Dict[str, Any]:
-    """
-    Prints information about projects in the west manifest.
 
-    Args:
-        projects (List[str], optional): Projects to operate on.
-        all (bool, optional): Include inactive projects.
-        inactive (bool, optional): List only inactive projects.
-        manifest_path_from_yaml (bool, optional): Print manifest path from YAML.
-        format (str, optional): Format string to use.
-
-    Returns:
-        dict: Command execution result.
-    """
-    command_args = ['list']
-    if all:
-        command_args.append('-a')
-    if inactive:
-        command_args.append('-i')
-    if manifest_path_from_yaml:
-        command_args.append('--manifest-path-from-yaml')
-    if format:
-        command_args.extend(['-f', format])
-    if projects:
-        command_args.extend(projects)
-    return run_west_command(command_args)
 
 # --- MCP Tool for `west manifest` ---
 @mcp.tool()
@@ -1126,16 +911,7 @@ def manage_config(
         command_args.append(value)
     return run_west_command(command_args)
 
-# --- MCP Tool for `west topdir` ---
-@mcp.tool()
-def get_topdir() -> Dict[str, Any]:
-    """
-    Prints the absolute path of the current west workspace's top directory.
 
-    Returns:
-        dict: Command execution result.
-    """
-    return run_west_command(['topdir'])
 
 # --- MCP Tool for `west twister` ---
 @mcp.tool()
