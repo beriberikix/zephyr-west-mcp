@@ -26,11 +26,9 @@ The server is built using Python and the official `modelcontextprotocol/python-s
 
 ### Installation
 
-1. **Clone this repository** (or copy the `west_mcp_server.py` file).
+1. **Download `west_mcp_server.py`** into your project directory.
 
-2. **Navigate to the project directory** in your terminal.
-
-3. **Install the `mcp` Python SDK:**
+2. **Install the `mcp` Python SDK:**
 
    Using `uv` (recommended):
 
@@ -45,15 +43,27 @@ The server is built using Python and the official `modelcontextprotocol/python-s
    pip install "mcp[cli]"
    ```
 
-### Running the Server
+### Project-Level Setup (for Gemini CLI users)
 
-To start the MCP server, run the Python script:
+To use this MCP server with the Gemini CLI, create a `.gemini` directory in your project root and add a `settings.json` file inside it with the following content:
 
-```bash
-python west_mcp_server.py
+```json
+{
+  "mcpServers": {
+    "zephyr-west": {
+      "command": "uv",
+      "args": [
+        "run",
+        "./west_mcp_server.py"
+      ]
+    }
+  }
+}
 ```
 
-The server will typically start on `http://127.0.0.1:8000/`. Check your terminal output for the exact address and port.
+This configuration assumes you are using `uv` to run the server. Adjust `command` and `args` if you are using a different method (e.g., `python west_mcp_server.py`).
+
+
 
 ## API Endpoints (Tools)
 
